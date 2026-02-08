@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kő-Papír-Olló + Sheldon Mode</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: #f0f2f5;
+            color: #333;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 5px; }
+
+        /* --- Sheldon Mode Váltógomb Stílus --- */
+        .switch-container {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* --- Eredményjelző Tábla  --- */
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px auto;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 400px;
+        }
+
+        .score-box {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            color: #666;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #29af00;
+        }
+
+        /* --- Játék Gombok --- */
+        .game-area { margin: 20px 0; }
+        
+        .choice-btn {
+            font-size: 2rem;
+            padding: 15px 25px;
+            margin: 10px;
+            cursor: pointer;
+            border: 2px solid #333;
+            border-radius: 10px;
+            background-color: white;
+            transition: transform 0.2s;
+        }
+
+        .choice-btn:hover { transform: scale(1.1); background-color: #e3e3e3; }
+
+        .sheldOnly { display: none; }
+
+        /* --- Üzenet --- */
+        #result {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 20px 0;
+            min-height: 1.5em;
+        }
+
+        /* --- Nullázó Gomb --- */
+        .reset-btn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .reset-btn:hover { background-color: #cc0000; }
+
+        /* --- Info Panelek --- */
+        .info-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .info-panel img {
+            max-width: 100%;
+            height: auto;
+            max-height: 250px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        #sheldon-info { display: none; }
+        #traditional-info { display: block; }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Kő-Papír-Olló<span class="sheldOnly">-Gyík-Spock <span>Játék</h1>
+
+    <div class="switch-container">
+        <span>Hagyományos</span>
+        <label class="switch">
+            <input type="checkbox" id="sheldon-mode-toggle">
+            <span class="slider"></span>
+        </label>
+        <span><strong>Sheldon Mode</strong> 🖖</span>
+    </div>
+
+    <div class="scoreboard">
+        <div class="score-box">
+            <span class="score-label">Győzelem</span>
+            <span id="wins" class="score-value">0</span>
+        </div>
+        <div class="score-box">
+            <span class="score-label">Döntetlen</span>
+            <span id="draws" class="score-value" style="color: #666;">0</span>
+        </div>
+        <div class="score-box">
+            <span class="score-label">Vereség</span>
+            <span id="losses" class="score-value" style="color: #ff4444;">0</span>
+        </div>
+		
+		<button class="reset-btn" onclick="resetScore()">Számláló Nullázása ↻</button>
+    </div>
+
+    <div class="game-area">
+		
+        <button class="choice-btn" onclick="play('rock')">🪨 Kő</button>
+        <button class="choice-btn" onclick="play('paper')">📄 Papír</button>
+        <button class="choice-btn" onclick="play('scissors')">✂️ Olló</button>
+        
+        <button class="choice-btn sheldOnly" onclick="play('lizard')">🦎 Gyík</button>
+        <button class="choice-btn sheldOnly" onclick="play('spock')">🖖 Spock</button>
+		
+		<div id="result">Válassz egyet a kezdéshez!</div>
+    </div>
+
+    <div id="traditional-info" class="info-panel">
+        <h3>Hagyományos Szabályok</h3>
+        <img src="RPS.svg" alt="Kő Papír Olló szabályok">
+        <p>A klasszikus szabályok: a kő üti az ollót, az olló a papírt, a papír a követ.</p>
+    </div>
+
+    <div id="sheldon-info" class="info-panel">
+        <h3>A szabályok (Sheldon Cooper szerint)</h3>
+        <img src="RPSLS.png" alt="Rock Paper Scissors Lizard Spock Rules">
+		<p>A papír beborítja a követ. A kő agyonüti a gyíkot. A gyík megmérgezi Spockot. Spock összetöri az ollót. Az olló lefejezi a gyíkot. A gyík megeszi a papírt. A papír cáfolja Spockot. Spock elpárologtatja a követ. És (ahogy mindig is) a kő  kicsorbítja az ollót.</p>
+        
+        <div class="video-container">
+			<iframe width="560" height="315" src="https://www.youtube.com/embed/pIpmITBocfM?si=ikENz2qDJzfF57O_" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+			
+        </div>
+    </div>
+
+    <script>
+        // --- Változók a pontszámokhoz ---
+        let wins = 0;
+        let draws = 0;
+        let losses = 0;
+
+        // --- Elemek lekérése ---
+        const toggle = document.getElementById('sheldon-mode-toggle');
+        const sheldonElements = document.querySelectorAll('.sheldOnly');
+        const sheldonInfo = document.getElementById('sheldon-info');
+        const traditionalInfo = document.getElementById('traditional-info');
+        const resultDiv = document.getElementById('result');
+        
+        // Számláló elemek
+        const winsDisplay = document.getElementById('wins');
+        const drawsDisplay = document.getElementById('draws');
+        const lossesDisplay = document.getElementById('losses');
+
+        let isSheldonMode = false;
+
+        // --- Váltógomb logikája ---
+        toggle.addEventListener('change', function() {
+            isSheldonMode = this.checked;
+            
+            if (isSheldonMode) {
+                sheldonElements.forEach(el => el.style.display = 'inline-block');
+                sheldonInfo.style.display = 'block';
+                traditionalInfo.style.display = 'none';
+                resultDiv.innerText = "Sheldon Mode aktiválva! (5 lehetőség)";
+            } else {
+                sheldonElements.forEach(el => el.style.display = 'none');
+                sheldonInfo.style.display = 'none';
+                traditionalInfo.style.display = 'block';
+                resultDiv.innerText = "Hagyományos mód (3 lehetőség)";
+            }
+        });
+
+        // --- Játék logika ---
+        function play(userChoice) {
+            const choices = isSheldonMode 
+                ? ['rock', 'paper', 'scissors', 'lizard', 'spock'] 
+                : ['rock', 'paper', 'scissors'];
+
+            const computerChoice = choices[Math.floor(Math.random() * choices.length)];
+
+            const rules = {
+                rock: ['scissors', 'lizard'],
+                paper: ['rock', 'spock'],
+                scissors: ['paper', 'lizard'],
+                lizard: ['spock', 'paper'],
+                spock: ['scissors', 'rock']
+            };
+
+            // Eredmény kiértékelése és számlálók növelése
+            if (userChoice === computerChoice) {
+                draws++; // Döntetlen növelése
+                resultDiv.innerHTML = `Döntetlen! <br> Te: ${emoji(userChoice)} | Gép: ${emoji(computerChoice)}`;
+            } else if (rules[userChoice].includes(computerChoice)) {
+                wins++; // Győzelem növelése
+                resultDiv.innerHTML = `<span style="color:green">Nyertél!</span> <br> Te: ${emoji(userChoice)} | Gép: ${emoji(computerChoice)}`;
+            } else {
+                losses++; // Vereség növelése
+                resultDiv.innerHTML = `<span style="color:red">Vesztettél!</span> <br> Te: ${emoji(userChoice)} | Gép: ${emoji(computerChoice)}`;
+            }
+            
+            // Számláló frissítése a képernyőn
+            updateScoreBoard();
+        }
+
+        // --- Számláló frissítése ---
+        function updateScoreBoard() {
+            winsDisplay.innerText = wins;
+            drawsDisplay.innerText = draws;
+            lossesDisplay.innerText = losses;
+        }
+
+        // --- Nullázás ---
+        function resetScore() {
+            wins = 0;
+            draws = 0;
+            losses = 0;
+            updateScoreBoard();
+            resultDiv.innerText = "Számláló nullázva. Kezdj új játékot!";
+        }
+
+        function emoji(choice) {
+            const icons = {
+                rock: '🪨', paper: '📄', scissors: '✂️',
+                lizard: '🦎', spock: '🖖'
+            };
+            return icons[choice];
+        }
+    </script>
+</body>
+</html>
